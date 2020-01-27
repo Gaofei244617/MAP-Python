@@ -1,0 +1,34 @@
+﻿<config>
+    <map_type>VOC2012</map_type>
+    <map_iou_thresh>0.5</map_iou_thresh>
+    <scene name="all">
+        <gt_box>G:\map\py\gt_boxes.txt</gt_box>
+        <detection name="aeroplane">G:\map\py\detection\aeroplane.txt</detection>
+        <detection name="bicycle">G:\map\py\detection\bicycle.txt</detection>
+        <detection name="bird">G:\map\py\detection\bird.txt</detection>
+        <detection name="boat">G:\map\py\detection\boat.txt</detection>
+        <detection name="bottle">G:\map\py\detection\bottle.txt</detection>
+        <detection name="bus">G:\map\py\detection\bus.txt</detection>
+        <detection name="car">G:\map\py\detection\car.txt</detection>
+        <detection name="cat">G:\map\py\detection\cat.txt</detection>
+        <detection name="chair">G:\map\py\detection\chair.txt</detection>
+        <detection name="cow">G:\map\py\detection\cow.txt</detection>
+        <detection name="diningtable">G:\map\py\detection\diningtable.txt</detection>
+        <detection name="dog">G:\map\py\detection\dog.txt</detection>
+        <detection name="horse">G:\map\py\detection\horse.txt</detection>
+        <detection name="motorbike">G:\map\py\detection\motorbike.txt</detection>
+        <detection name="person">G:\map\py\detection\person.txt</detection>
+        <detection name="pottedplant">G:\map\py\detection\pottedplant.txt</detection>
+        <detection name="sheep">G:\map\py\detection\sheep.txt</detection>
+        <detection name="sofa">G:\map\py\detection\sofa.txt</detection>
+        <detection name="train">G:\map\py\detection\train.txt</detection>
+        <detection name="tvmonitor">G:\map\py\detection\tvmonitor.txt</detection>
+    </scene>
+    <scene name="part">
+        <gt_box>G:\map\py\gt_boxes.txt</gt_box>
+        <detection name="aeroplane">G:\map\py\detection\aeroplane.txt</detection>
+        <detection name="bicycle">G:\map\py\detection\bicycle.txt</detection>
+        <detection name="bird">G:\map\py\detection\bird.txt</detection>
+    </scene>
+
+</config>
