@@ -3,6 +3,12 @@
 
 import os
 import numpy as np
+import get_data as dat
+
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 
 # AP VOC2007
 def cal_ap_VOC2007(rec, prec):
@@ -144,3 +150,32 @@ def voc_eval(det_data,
         return sorted_scores, np.nan, np.nan, np.nan, mrec, mprec, ap
 
     return sorted_scores, tp, fp, npos-tp, mrec, mprec, ap
+
+def cal_map_all(config_file):
+    tree = ET.parse(config_file)
+    map_type = tree.find("map_type").text  # map计算方式
+    map_iou_thresh = float(tree.find("map_iou_thresh").text) # map IoU阈值
+    scenes = tree.findall("scene")
+    # 计算所有mAP相关数据 {"scene":{"obj_type":(conf, tp, fp, fn, rec, prec, ap)}}
+    ret = {} 
+    for scene in scenes:
+        gt_file = scene.find("gt_box").text
+        scene_name = scene.attrib["name"]
+        det_files = [] 
+        class_list = []
+        for dt_file in scene.findall("detection"):
+            det_files.append(dt_file.text)
+            class_list.append(dt_file.attrib["name"])
+        # gt_data : [("image_name", "obj_type", xmin, ymin, xmax, ymax), ...]
+        gt_data = dat.get_gtBoxes(gt_file) # 从txt文件解析gt boxes数据
+        # det_data：[("image_name", "obj_type", confidence, xmin, ymin, xmax, ymax), ...]
+        det_data = dat.get_detBoxes(det_files, class_list) # 从txt文件解析detect boxes数据
+        for obj_type in class_list:
+            # 计算AP相关数据
+            conf, tp, fp, fn, rec, prec, ap = voc_eval(det_data, gt_data, obj_type, map_iou_thresh, map_type)
+            if scene_name in ret.keys():
+                ret[scene_name][obj_type] = (conf, tp, fp, fn, rec, prec, ap)   
+            else:
+                ret[scene_name] = {obj_type: (conf, tp, fp, fn, rec, prec, ap)}
+    return ret
+
