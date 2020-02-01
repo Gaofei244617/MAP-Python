@@ -4,43 +4,37 @@
 import os
 import numpy as np
 
-def voc_ap(rec, prec, map_type):
-    """ ap = voc_ap(rec, prec, [use_07_metric])
-    Compute VOC AP given precision and recall.
-    If use_07_metric is true, uses the
-    VOC 07 11 point method (default:False).
-    """
-    if map_type == "VOC2007":
-        # 11 point metric
-        ap = 0.
-        for t in np.arange(0., 1.1, 0.1):
-            if np.sum(rec >= t) == 0:
-                p = 0
-            else:
-                p = np.max(prec[rec >= t])
-            ap = ap + p / 11.
-    elif map_type == "VOC2012":
-        # correct AP calculation
-        # first append sentinel values at the end
-        mrec = np.concatenate(([0.], rec, [1.]))
-        mpre = np.concatenate(([0.], prec, [0.]))
+# AP VOC2007
+def cal_ap_VOC2007(rec, prec):
+    ap = 0.
+    for t in np.arange(0., 1.1, 0.1):
+        if np.sum(rec >= t) == 0:
+            p = 0
+        else:
+            p = np.max(prec[rec >= t])
+        ap = ap + p / 11.
+    return ap
 
-        # compute the precision envelope
-        for i in range(mpre.size - 1, 0, -1):
-            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+# AP VOC2012
+def cal_ap_VOC2012(rec, prec):
+    # first append sentinel values at the end
+    mrec = np.concatenate(([0.], rec, [1.]))
+    mpre = np.concatenate(([0.], prec, [0.]))
+    # compute the precision envelope
+    for i in range(mpre.size - 1, 0, -1):
+        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
 
-        # to calculate area under PR curve, look for points
-        # where X axis (recall) changes value
-        i = np.where(mrec[1:] != mrec[:-1])[0]
-
-        # and sum (\Delta recall) * prec
-        ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    # to calculate area under PR curve, look for points
+    # where X axis (recall) changes value
+    i = np.where(mrec[1:] != mrec[:-1])[0]
+    # and sum (\Delta recall) * prec
+    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
 def voc_eval(det_data,
              gt_boxes,
              obj_type,
-             iou_thresh,
+             iou,
              map_type):
     """
     Top level function that does the PASCAL VOC evaluation.
@@ -83,52 +77,70 @@ def voc_eval(det_data,
     image_ids = [image_ids[x] for x in sorted_ind] # imagename按照置信度降序排序
 
     # go down dets and mark TPs and FPs
-    nd = len(image_ids)
-    tp = np.zeros(nd)
-    fp = np.zeros(nd)
-    for d in range(nd):
-        R = class_recs[image_ids[d]]
-        bb = BB[d, :].astype(float)
-        ovmax = -np.inf
-        BBGT = R['bbox'].astype(float)
+    if map_type == "COCO":
+        iou_list = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+    else:
+        iou_list = [iou]
 
-        if BBGT.size > 0:
-            # compute IoU
-            # 相交区域
-            ixmin = np.maximum(BBGT[:, 0], bb[0])
-            iymin = np.maximum(BBGT[:, 1], bb[1])
-            ixmax = np.minimum(BBGT[:, 2], bb[2])
-            iymax = np.minimum(BBGT[:, 3], bb[3])
-            iw = np.maximum(ixmax - ixmin + 1., 0.)
-            ih = np.maximum(iymax - iymin + 1., 0.)
-            inters = iw * ih
+    ap = 0.0
+    mrec = 0.0
+    mprec = 0.0  
+    for iou_thresh in iou_list:
+        nd = len(image_ids)
+        tp = np.zeros(nd)
+        fp = np.zeros(nd)
+        for d in range(nd):
+            R = class_recs[image_ids[d]]
+            bb = BB[d, :].astype(float)
+            ovmax = -np.inf
+            BBGT = R['bbox'].astype(float)
 
-            # union
-            uni = ((bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) +
-                   (BBGT[:, 2] - BBGT[:, 0] + 1.) *
-                   (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
+            if BBGT.size > 0:
+                # compute IoU
+                # 相交区域
+                ixmin = np.maximum(BBGT[:, 0], bb[0])
+                iymin = np.maximum(BBGT[:, 1], bb[1])
+                ixmax = np.minimum(BBGT[:, 2], bb[2])
+                iymax = np.minimum(BBGT[:, 3], bb[3])
+                iw = np.maximum(ixmax - ixmin + 1., 0.)
+                ih = np.maximum(iymax - iymin + 1., 0.)
+                inters = iw * ih
 
-            overlaps = inters / uni    # IoU
-            ovmax = np.max(overlaps)   # 最大交并比
-            jmax = np.argmax(overlaps)
-        
-        # 如果最大IoU大于阈值
-        if ovmax > iou_thresh:
-            if not R['det'][jmax]:
-                tp[d] = 1.
-                R['det'][jmax] = 1
+                # union
+                uni = ((bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) +
+                    (BBGT[:, 2] - BBGT[:, 0] + 1.) *
+                    (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
+
+                overlaps = inters / uni    # IoU
+                ovmax = np.max(overlaps)   # 最大交并比
+                jmax = np.argmax(overlaps)
+            
+            # 如果最大IoU大于阈值
+            if ovmax > iou_thresh:
+                if not R['det'][jmax]:
+                    tp[d] = 1.
+                    R['det'][jmax] = 1
+                else:
+                    fp[d] = 1.
             else:
                 fp[d] = 1.
+
+        # compute precision recall
+        fp = np.cumsum(fp)
+        tp = np.cumsum(tp)
+        rec = tp / float(npos)
+        # avoid divide by zero in case the first detection matches a difficult
+        # ground truth
+        prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
+        mrec = mrec + rec / len(iou_list)
+        mprec = mprec + prec / len(iou_list)
+        if map_type == "VOC2007":
+            p = cal_ap_VOC2007(rec, prec)
         else:
-            fp[d] = 1.
+            p = cal_ap_VOC2012(rec, prec)
+        ap = ap + p / len(iou_list)
 
-    # compute precision recall
-    fp = np.cumsum(fp)
-    tp = np.cumsum(tp)
-    rec = tp / float(npos)
-    # avoid divide by zero in case the first detection matches a difficult
-    # ground truth
-    prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-    ap = voc_ap(rec, prec, map_type)
+    if map_type == "COCO":
+        return sorted_scores, np.nan, np.nan, np.nan, mrec, mprec, ap
 
-    return sorted_scores, tp, fp, npos-tp, rec, prec, ap
+    return sorted_scores, tp, fp, npos-tp, mrec, mprec, ap
