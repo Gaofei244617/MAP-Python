@@ -32,13 +32,13 @@ for scene in scenes:
     det_data = dat.get_detBoxes(det_files, class_list) # 从txt文件解析detect boxes数据
     for obj_type in class_list:
         # 计算AP相关数据
-        rec, prec, tp, fp, fn, ap = voc.voc_eval(det_data, gt_data, obj_type, map_iou_thresh, map_type)
+        conf, tp, fp, fn, rec, prec, ap = voc.voc_eval(det_data, gt_data, obj_type, map_iou_thresh, map_type)
         if scene_name in ret.keys():
-            ret[scene_name][obj_type] = (rec, prec, tp, fp, fn, ap)   
+            ret[scene_name][obj_type] = (conf, tp, fp, fn, rec, prec, ap)   
         else:
-            ret[scene_name] = {obj_type: (rec, prec, tp, fp, fn, ap)}
+            ret[scene_name] = {obj_type: (conf, tp, fp, fn, rec, prec, ap)}
 
 # output
 for scene_name, obj in ret.items():
     for obj_type, item in obj.items():
-        print("%s %s %f"%(scene_name, obj_type, item[5])) 
+        print("%s %s %f"%(scene_name, obj_type, item[6])) 

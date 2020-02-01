@@ -78,7 +78,7 @@ def voc_eval(det_data,
 
     # sort by confidence
     sorted_ind = np.argsort(-confidence) # 置信度list索引按照置信度降序排序
-    # sorted_scores = np.sort(-confidence) # 置信度降序排序, 后续未使用此变量
+    sorted_scores = np.sort(-confidence) # 置信度降序排序, 后续未使用此变量
     BB = BB[sorted_ind, :]  # bound box按照置信度降序排序
     image_ids = [image_ids[x] for x in sorted_ind] # imagename按照置信度降序排序
 
@@ -131,4 +131,4 @@ def voc_eval(det_data,
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = voc_ap(rec, prec, map_type)
 
-    return rec, prec, tp, fp, npos-tp, ap
+    return sorted_scores, tp, fp, npos-tp, rec, prec, ap
