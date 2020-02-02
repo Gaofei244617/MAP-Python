@@ -37,21 +37,15 @@ def cal_ap_VOC2012(rec, prec):
     ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
-def voc_eval(det_data,
-             gt_boxes,
-             obj_type,
-             iou,
-             map_type):
+def voc_eval(det_data, gt_boxes, obj_type, iou, map_type):
     """
     Top level function that does the PASCAL VOC evaluation.
-
     assume det_data: [("imagename", "obj_type", confidenc, xmin, ymin, xmax, ymax), ...]
     assume gt_boxes: [("imagename", "obj_type", xmin, ymin, xmax, ymax), ...]
     obj_type: Category name 
     [iou_thresh]: Overlap threshold (default = 0.5)
     [map_type]: To use VOC2007's 11 point AP or VOC2012 AP
     """
-
     # recs : {"imagename": [{"obj_type":"obj_type", "bbox":[xmin,ymin,xmax,ymax]}, ...]}
     recs = {} 
     for item in gt_boxes:
@@ -97,6 +91,7 @@ def voc_eval(det_data,
         fp = np.zeros(nd)
         for d in range(nd):
             R = class_recs[image_ids[d]]
+            R["det"] = [False] * len(R["det"])
             bb = BB[d, :].astype(float)
             ovmax = -np.inf
             BBGT = R['bbox'].astype(float)
